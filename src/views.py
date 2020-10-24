@@ -72,17 +72,17 @@ def add_meeting():
     title = request.json['title']
     password = request.json['password']
     start = request.json['start']
-    iso_start = datetime.strptime(start, '%Y-%m-%d %H:%M:%S').isoformat()
+    iso_start = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(hours=7)
     end = request.json['end']
-    iso_end = datetime.strptime(end, '%Y-%m-%d %H:%M:%S').isoformat()
+    iso_end = datetime.strptime(end, '%Y-%m-%d %H:%M:%S') + timedelta(hours=7)
     enabledAutoRecordMeeting = request.json['enabledAutoRecordMeeting']
     allowAnyUserToBeCoHost = request.json['allowAnyUserToBeCoHost']
     invitees = request.json['invitees']
     body = {
         "title": str(title),
         "password": str(password),
-        "start": iso_start,
-        "end": iso_end,
+        "start": iso_start.isoformat(),
+        "end": iso_end.isoformat(),
         "enabledAutoRecordMeeting": enabledAutoRecordMeeting,
         "allowAnyUserToBeCoHost": allowAnyUserToBeCoHost,
         "invitees": invitees
