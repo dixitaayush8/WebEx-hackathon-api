@@ -3,6 +3,7 @@ from flask import request
 from flask import jsonify
 from flask import Flask
 from flask_cors import CORS, cross_origin
+import json
 import collections
 import urllib
 import requests
@@ -60,6 +61,34 @@ def recommendations():
         return response_with(resp.SUCCESS_200, value={"list" : jsonified_list[0:7]})
     except Exception:
         return response_with(resp.INVALID_INPUT_422)
+
+@main.route('/addmeeting', methods=['POST'])
+def add_meeting():
+    headers = {
+        "Authorization": "Bearer NGNjYjE3OTMtYzMyNy00MWY2LThhOTMtNDk1YTA1ZDQ0NGI0Yjg4MTIzMzYtZjhj_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f",
+        "Content-Type": "application/json",
+        "Accept": "*/*"
+    }
+    title = request.json['title']
+    password = request.json['password']
+    start = request.json['start']
+    iso_start = datetime.strptime(start, '%Y-%m-%d %H:%M:%S').isoformat()
+    end = request.json['end']
+    iso_end = datetime.strptime(end, '%Y-%m-%d %H:%M:%S').isoformat()
+    enabledAutoRecordMeeting = request.json['enabledAutoRecordMeeting']
+    allowAnyUserToBeCoHost = request.json['allowAnyUserToBeCoHost']
+    invitees = request.json['invitees']
+    body = {
+        "title": str(title),
+        "password": str(password),
+        "start": iso_start,
+        "end": iso_end,
+        "enabledAutoRecordMeeting": enabledAutoRecordMeeting,
+        "allowAnyUserToBeCoHost": allowAnyUserToBeCoHost,
+        "invitees": invitees
+    }
+    r = requests.post('https://webexapis.com/v1/meetings', headers=headers, json=json.dumps(body))
+    return response_with(resp.SUCCESS_200)
 
 
 
