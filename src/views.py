@@ -7,9 +7,12 @@ import json
 import collections
 import urllib
 import requests
+import schedule
 from datetime import datetime, timedelta
 from src.utils import responses as resp
 from src.utils.responses import response_with
+from threading import Thread
+import time
 
 
 main = Blueprint('main', __name__)
@@ -20,16 +23,16 @@ def recommendations():
     try:
         test_date = str(datetime.today().replace(second=0, microsecond=0))
         test_date_str = datetime.strptime(test_date, '%Y-%m-%d %H:%M:%S')
+        print(test_date_str)
 
         headers = {
-            "Authorization": "Bearer YzMxNTJmNjYtZTI1Mi00MmFlLWFmNDgtYzAxMzNmZWIxMGFmZmZiOGVkNTktNDU1_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f",
+            "Authorization": "Bearer token",
             "Accept": "*/*"
         }
         params = {
             "from": (test_date_str - timedelta(days=28)).isoformat(),
             "to": test_date_str.isoformat()
         }
-
         list_of_data = []
         r = requests.get('https://webexapis.com/v1/meetings', headers=headers, params=params)
         if len(r.json()['items']) > 0:
@@ -65,7 +68,7 @@ def recommendations():
 @main.route('/addmeeting', methods=['POST'])
 def add_meeting():
     headers = {
-        "Authorization": "Bearer NGNjYjE3OTMtYzMyNy00MWY2LThhOTMtNDk1YTA1ZDQ0NGI0Yjg4MTIzMzYtZjhj_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f",
+        "Authorization": "Bearer token",
         "Content-Type": "application/json",
         "Accept": "*/*"
     }
@@ -78,6 +81,8 @@ def add_meeting():
     enabledAutoRecordMeeting = request.json['enabledAutoRecordMeeting']
     allowAnyUserToBeCoHost = request.json['allowAnyUserToBeCoHost']
     invitees = request.json['invitees']
+    meetingAgenda = request.json['meetingAgenda']
+    print(meetingAgenda)
     body = {
         "title": str(title),
         "password": str(password),
@@ -105,12 +110,41 @@ def add_meeting():
         else:
             membership_body = {
                 "roomId": create_room.json()['id'],
-                "personEmail": j
+                "personEmail": j,
+                "isModerator": True
             }
-        create_membership = requests.post('https://webexapis.com/v1/memberships', headers=headers, json=json.dumps(membership_body))
-    message_body = {"roomId": create_room.json()['id'], "text": "hi"}
-    create_message = requests.post('https://webexapis.com/v1/messages', headers=headers, json=message_body, verify=True)
+        create_membership = requests.post('https://webexapis.com/v1/memberships', headers=headers, json=membership_body)
+    #now = datetime.datetime.now()
+    #hour = '{:02d}'.format(now.hour)
+    #minute = '{:02d}'.format(now.minute)
+    #now_time = '{}:{}'.format(hour, minute)
+    for i in meetingAgenda:
+        message_body = {"roomId": create_room.json()['id'], "text": i['message']}
+        schedule.every().day.at('13:33').do(send_alert, message_body=message_body, headers=headers)
+    t = Thread(target=run_schedule)
+    t.start()
+        #message_body = {"roomId": create_room.json()['id'], "text": "hi"}
+    #create_message = requests.post('https://webexapis.com/v1/messages', headers=headers, json=message_body, verify=True)
     return response_with(resp.SUCCESS_200)
+
+def run_schedule():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+def send_alert(message_body, headers):
+    create_message = requests.post('https://webexapis.com/v1/messages', headers=headers, json=message_body, verify=True)
+    return schedule.CancelJob
+
+
+
+
+
+
+
+
+
+
 
 
 
