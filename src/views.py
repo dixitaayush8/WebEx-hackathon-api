@@ -88,6 +88,28 @@ def add_meeting():
         "invitees": invitees
     }
     r = requests.post('https://webexapis.com/v1/meetings', headers=headers, json=json.dumps(body))
+    room_title = r.json()['title']
+    room_body = {"title": str(room_title)}
+    create_room = requests.post('https://webexapis.com/v1/rooms', headers=headers, json=room_body, verify=True)
+    ids = []
+    ids.append(r.json()['hostEmail'])
+    for i in invitees:
+        ids.append(i['email'])
+    for j in ids:
+        if j == r.json()['hostEmail']:
+            membership_body = {
+                "roomId": create_room.json()['id'],
+                "personEmail": j,
+                "isModerator": True
+            }
+        else:
+            membership_body = {
+                "roomId": create_room.json()['id'],
+                "personEmail": j
+            }
+        create_membership = requests.post('https://webexapis.com/v1/memberships', headers=headers, json=json.dumps(membership_body))
+    message_body = {"roomId": create_room.json()['id'], "text": "hi"}
+    create_message = requests.post('https://webexapis.com/v1/messages', headers=headers, json=message_body, verify=True)
     return response_with(resp.SUCCESS_200)
 
 
