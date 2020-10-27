@@ -19,7 +19,7 @@ main = Blueprint('main', __name__)
 CORS(main)
 
 @main.route('/namerecommendations', methods=['GET'])
-def recommendations():
+def recommendations(): #get top 7 (or less) names user had meetings with during the past 28 days
     try:
         test_date = str(datetime.today().replace(second=0, microsecond=0))
         test_date_str = datetime.strptime(test_date, '%Y-%m-%d %H:%M:%S')
@@ -33,24 +33,24 @@ def recommendations():
             "to": test_date_str.isoformat()
         }
         list_of_data = []
-        r = requests.get('https://webexapis.com/v1/meetings', headers=headers, params=params)
+        r = requests.get('https://webexapis.com/v1/meetings', headers=headers, params=params) #get info for meetings that happened during the past 28 days from today
         if len(r.json()['items']) > 0:
             list_of_data.append(r.json()['items'])
-        final_dict = collections.OrderedDict()
-        for i in r.json()['items']:
-            j = requests.get('https://webexapis.com/v1/meetingInvitees?meetingId=' + i['id'], headers=headers)
+        final_dict = collections.OrderedDict() #ordered dictionary to map value frequency count for each "name,email" key
+        for i in r.json()['items']: #loop through meetings
+            j = requests.get('https://webexapis.com/v1/meetingInvitees?meetingId=' + i['id'], headers=headers) #get full meeting invitee info of each attendee to obtain their name and email
             for s in j.json()['items']:
                 if s['displayName'] + ',' + s['email'] not in final_dict:
                     final_dict[s['displayName'] + ',' + s['email']] = 0
                 final_dict[s['displayName'] + ',' + s['email']] = final_dict[s['displayName'] + ',' + s['email']] + 1
-        final_dict = sorted(final_dict.items(), key=lambda x: x[1], reverse=True)
+        final_dict = sorted(final_dict.items(), key=lambda x: x[1], reverse=True) #sort names by highest to lowest frequency count
         c = 0
         final_list = []
-        while c < len(final_dict):
+        while c < len(final_dict): #extract keys from dictionary
             final_list.append(final_dict[c][0])
             c = c + 1
         jsonified_list = []
-        for i in final_list:
+        for i in final_list: #create list of dictionaries with name and email
             arr = i.split(',')
             json_dict = dict()
             json_dict['name'] = arr[0]
@@ -60,12 +60,12 @@ def recommendations():
             return response_with(resp.SUCCESS_200, value={"list": jsonified_list})
         elif len(final_list) < 7:
             return response_with(resp.SUCCESS_200, value={"list" : jsonified_list[0:len(final_list) - 1]})
-        return response_with(resp.SUCCESS_200, value={"list" : jsonified_list[0:7]})
+        return response_with(resp.SUCCESS_200, value={"list" : jsonified_list[0:7]}) #return list of dictionaries with name and email
     except Exception:
         return response_with(resp.INVALID_INPUT_422)
 
 @main.route('/addmeeting', methods=['POST'])
-def add_meeting():
+def add_meeting(): #add meeting, create Webex Teams room with meeting host + attendees, automatically send meeting alerts at specified minutes after start time of meeting
     try:
         headers = {
             "Authorization": "Bearer NWI3M2I0ZGUtNDYwZC00ZjUxLWI3YjYtZDMyY2U0NTA2ZGM2NzA5ZjE2NjQtODM0_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f",
@@ -91,10 +91,10 @@ def add_meeting():
             "allowAnyUserToBeCoHost": allowAnyUserToBeCoHost,
             "invitees": invitees
         }
-        r = requests.post('https://webexapis.com/v1/meetings', headers=headers, json=json.dumps(body))
+        r = requests.post('https://webexapis.com/v1/meetings', headers=headers, json=json.dumps(body)) #add meeting
         room_title = r.json()['title']
         room_body = {"title": str(room_title)}
-        create_room = requests.post('https://webexapis.com/v1/rooms', headers=headers, json=room_body, verify=True)
+        create_room = requests.post('https://webexapis.com/v1/rooms', headers=headers, json=room_body, verify=True) #create room out of meeting title
         ids = []
         ids.append(r.json()['hostEmail'])
         for i in invitees:
@@ -112,9 +112,9 @@ def add_meeting():
                     "personEmail": j,
                     "isModerator": True
                 }
-            create_membership = requests.post('https://webexapis.com/v1/memberships', headers=headers, json=membership_body)
+            create_membership = requests.post('https://webexapis.com/v1/memberships', headers=headers, json=membership_body) #add meeting attendees to newly created room
         for i in meetingAgenda:
-            iso_agenda_item = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=i['minutes']) - timedelta(hours=7)
+            iso_agenda_item = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=i['minutes']) - timedelta(hours=7) #for each meeting agenda item entered, generate exact time in ISO format and offset by minutes entered
             iso_agenda_item_hour = str(iso_agenda_item.hour)
             iso_agenda_item_min = str(iso_agenda_item.minute)
             if int(iso_agenda_item.hour) < 10:
@@ -123,19 +123,19 @@ def add_meeting():
                 iso_agenda_item_min = '0' + iso_agenda_item_min
             agenda_item_time = iso_agenda_item_hour + ':' + iso_agenda_item_min
             message_body = {"roomId": create_room.json()['id'], "text": i['message']}
-            schedule.every().day.at(agenda_item_time).do(send_alert, message_body=message_body, headers=headers)
-        t = Thread(target=run_schedule)
+            schedule.every().day.at(agenda_item_time).do(send_alert, message_body=message_body, headers=headers) #use scheduling job to generate message at specified time
+        t = Thread(target=run_schedule) #keep a single thread running to keep track of the scheduled jobs
         t.start()
         return response_with(resp.SUCCESS_200)
     except Exception:
         return response_with(resp.INVALID_INPUT_422)
 
-def run_schedule():
+def run_schedule(): #keep thread running during Flask session
     while True:
         schedule.run_pending()
         time.sleep(1)
 
 def send_alert(message_body, headers):
-    create_message = requests.post('https://webexapis.com/v1/messages', headers=headers, json=message_body, verify=True)
-    return schedule.CancelJob
+    create_message = requests.post('https://webexapis.com/v1/messages', headers=headers, json=message_body, verify=True) #send message
+    return schedule.CancelJob #ensure the scheduled job occurs only once, not everyday at same time
 
