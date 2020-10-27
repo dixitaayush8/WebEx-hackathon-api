@@ -114,7 +114,7 @@ def add_meeting():
                 }
             create_membership = requests.post('https://webexapis.com/v1/memberships', headers=headers, json=membership_body)
         for i in meetingAgenda:
-            iso_agenda_item = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=i['minutes'])
+            iso_agenda_item = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=i['minutes']) - timedelta(hours=7)
             iso_agenda_item_hour = str(iso_agenda_item.hour)
             iso_agenda_item_min = str(iso_agenda_item.minute)
             if int(iso_agenda_item.hour) < 10:
