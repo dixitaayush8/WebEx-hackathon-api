@@ -26,7 +26,7 @@ def recommendations(): #get top 7 (or less) names user had meetings with during 
         test_date_str = datetime.strptime(test_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {
-            "Authorization": "Bearer ODAwNzA3NDQtYzFjNS00MzBkLWI1ZWItNjVlOWZkOWI0M2U5OTg0MDkyZTgtNzIx_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f",
+            "Authorization": "Bearer token for USER",
             "Accept": "*/*"
         }
         params = {
@@ -69,7 +69,7 @@ def recommendations(): #get top 7 (or less) names user had meetings with during 
 def add_meeting(): #add meeting, create Webex Teams room with meeting host + attendees, automatically send meeting alerts at specified minutes after start time of meeting
     try:
         headers = {
-            "Authorization": "Bearer ODAwNzA3NDQtYzFjNS00MzBkLWI1ZWItNjVlOWZkOWI0M2U5OTg0MDkyZTgtNzIx_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f",
+            "Authorization": "Bearer token for USER",
             "Content-Type": "application/json",
             "Accept": "*/*"
         }
@@ -114,11 +114,15 @@ def add_meeting(): #add meeting, create Webex Teams room with meeting host + att
                     "isModerator": True
                 }
             create_membership = requests.post('https://webexapis.com/v1/memberships', headers=headers, json=membership_body) #add meeting attendees to newly created room
+        agenda_plan = ""
         s = sched.scheduler(time.time, time.sleep)
         for i in meetingAgenda:
+            agenda_plan = agenda_plan + i['message'] + '\n'
             iso_agenda_item = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=i['minutes']) - timedelta(hours=7) #for each meeting agenda item entered, generate exact time in ISO format and offset by minutes entered
-            message_body = {"roomId": create_room.json()['id'], "text": i['message']}
-            s.enterabs(iso_agenda_item.timestamp(), 1, send_alert, argument=(message_body, headers))
+            message_body = {"toPersonEmail": r.json()['hostEmail'], "text": i['message']}
+            s.enterabs(iso_agenda_item.timestamp(), 1, send_alert, argument=(message_body,)) #schedule notification messages from bot
+        send_agenda_to_all_users_body = {"roomId": create_room.json()['id'], "text": agenda_plan}
+        send_agenda_to_all_users = requests.post('https://webexapis.com/v1/messages', headers=headers, json=send_agenda_to_all_users_body, verify=True) #send entire agenda to all users in room
         t = Thread(target=run_schedule, args=(s,)) #keep a single thread running to keep track of the scheduled jobs
         t.start()
         return response_with(resp.SUCCESS_200)
@@ -130,21 +134,10 @@ def run_schedule(s): #keep thread running during Flask session
         s.run()
         time.sleep(1)
 
-def send_alert(message_body, headers):
-    create_message = requests.post('https://webexapis.com/v1/messages', headers=headers, json=message_body, verify=True) #send message
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def send_alert(message_body):
+    headers = {
+        "Authorization": "Bearer token for BOT",
+        "Content-Type": "application/json",
+        "Accept": "*/*"
+    }
+    create_message = requests.post('https://webexapis.com/v1/messages', headers=headers, json=message_body, verify=True) #send message 
