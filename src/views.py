@@ -25,7 +25,7 @@ def recommendations(): #get top 7 (or less) names user had meetings with during 
         test_date_str = datetime.strptime(test_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {
-            "Authorization": "Bearer NWI3M2I0ZGUtNDYwZC00ZjUxLWI3YjYtZDMyY2U0NTA2ZGM2NzA5ZjE2NjQtODM0_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f",
+            "Authorization": "Bearer ODAwNzA3NDQtYzFjNS00MzBkLWI1ZWItNjVlOWZkOWI0M2U5OTg0MDkyZTgtNzIx_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f",
             "Accept": "*/*"
         }
         params = {
@@ -36,7 +36,7 @@ def recommendations(): #get top 7 (or less) names user had meetings with during 
         r = requests.get('https://webexapis.com/v1/meetings', headers=headers, params=params) #get info for meetings that happened during the past 28 days from today
         if len(r.json()['items']) > 0:
             list_of_data.append(r.json()['items'])
-        final_dict = collections.OrderedDict() #ordered dictionary to map value frequency count for each "name,email" key
+        final_dict = collections.OrderedDict() #ordered dictionary to map frequency count of "name,email" key
         for i in r.json()['items']: #loop through meetings
             j = requests.get('https://webexapis.com/v1/meetingInvitees?meetingId=' + i['id'], headers=headers) #get full meeting invitee info of each attendee to obtain their name and email
             for s in j.json()['items']:
@@ -66,69 +66,67 @@ def recommendations(): #get top 7 (or less) names user had meetings with during 
 
 @main.route('/addmeeting', methods=['POST'])
 def add_meeting(): #add meeting, create Webex Teams room with meeting host + attendees, automatically send meeting alerts at specified minutes after start time of meeting
-    try:
-        headers = {
-            "Authorization": "Bearer NWI3M2I0ZGUtNDYwZC00ZjUxLWI3YjYtZDMyY2U0NTA2ZGM2NzA5ZjE2NjQtODM0_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f",
-            "Content-Type": "application/json",
-            "Accept": "*/*"
-        }
-        title = request.json['title']
-        password = request.json['password']
-        start = request.json['start']
-        iso_start = datetime.strptime(start, '%Y-%m-%d %H:%M:%S')
-        end = request.json['end']
-        iso_end = datetime.strptime(end, '%Y-%m-%d %H:%M:%S')
-        enabledAutoRecordMeeting = request.json['enabledAutoRecordMeeting']
-        allowAnyUserToBeCoHost = request.json['allowAnyUserToBeCoHost']
-        invitees = request.json['invitees']
-        meetingAgenda = request.json['meetingAgenda']
-        body = {
-            "title": str(title),
-            "password": str(password),
-            "start": iso_start.isoformat(),
-            "end": iso_end.isoformat(),
-            "enabledAutoRecordMeeting": enabledAutoRecordMeeting,
-            "allowAnyUserToBeCoHost": allowAnyUserToBeCoHost,
-            "invitees": invitees
-        }
-        r = requests.post('https://webexapis.com/v1/meetings', headers=headers, json=json.dumps(body)) #add meeting
-        room_title = r.json()['title']
-        room_body = {"title": str(room_title)}
-        create_room = requests.post('https://webexapis.com/v1/rooms', headers=headers, json=room_body, verify=True) #create room out of meeting title
-        ids = []
-        ids.append(r.json()['hostEmail'])
-        for i in invitees:
-            ids.append(i['email'])
-        for j in ids:
-            if j == r.json()['hostEmail']:
-                membership_body = {
-                    "roomId": create_room.json()['id'],
-                    "personEmail": j,
-                    "isModerator": True
-                }
-            else:
-                membership_body = {
-                    "roomId": create_room.json()['id'],
-                    "personEmail": j,
-                    "isModerator": True
-                }
-            create_membership = requests.post('https://webexapis.com/v1/memberships', headers=headers, json=membership_body) #add meeting attendees to newly created room
-        for i in meetingAgenda:
-            iso_agenda_item = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=i['minutes']) - timedelta(hours=7) #for each meeting agenda item entered, generate exact time in ISO format and offset by minutes entered
-            iso_agenda_item_hour = str(iso_agenda_item.hour)
-            iso_agenda_item_min = str(iso_agenda_item.minute)
-            if int(iso_agenda_item.hour) < 10:
-                iso_agenda_item_hour = '0' + iso_agenda_item_hour
-            if int(iso_agenda_item_min) < 10:
-                iso_agenda_item_min = '0' + iso_agenda_item_min
-            agenda_item_time = iso_agenda_item_hour + ':' + iso_agenda_item_min
-            message_body = {"roomId": create_room.json()['id'], "text": i['message']}
-            schedule.every().day.at(agenda_item_time).do(send_alert, message_body=message_body, headers=headers) #use scheduling job to generate message at specified time
-        t = Thread(target=run_schedule) #keep a single thread running to keep track of the scheduled jobs
-        t.start()
-        return response_with(resp.SUCCESS_200)
-    except Exception:
-        return response_with(resp.INVALID_INPUT_422)
+    headers = {
+        "Authorization": "Bearer ODAwNzA3NDQtYzFjNS00MzBkLWI1ZWItNjVlOWZkOWI0M2U5OTg0MDkyZTgtNzIx_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f",
+        "Content-Type": "application/json",
+        "Accept": "*/*"
+    }
+    title = request.json['title']
+    password = request.json['password']
+    start = request.json['start']
+    iso_start = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(hours=7)
+    end = request.json['end']
+    iso_end = datetime.strptime(end, '%Y-%m-%d %H:%M:%S') + timedelta(hours=7)
+    enabledAutoRecordMeeting = request.json['enabledAutoRecordMeeting']
+    allowAnyUserToBeCoHost = request.json['allowAnyUserToBeCoHost']
+    invitees = request.json['invitees']
+    meetingAgenda = request.json['meetingAgenda']
+    body = {
+        "title": str(title),
+        "password": str(password),
+        "start": iso_start.isoformat(),
+        "end": iso_end.isoformat(),
+        "enabledAutoRecordMeeting": enabledAutoRecordMeeting,
+        "allowAnyUserToBeCoHost": allowAnyUserToBeCoHost,
+        "invitees": invitees
+    }
+    r = requests.post('https://webexapis.com/v1/meetings', headers=headers, json=json.dumps(body)) #add meeting
+    room_title = r.json()['title']
+    room_body = {"title": str(room_title)}
+    create_room = requests.post('https://webexapis.com/v1/rooms', headers=headers, json=room_body, verify=True) #create room out of meeting title
+    ids = []
+    ids.append(r.json()['hostEmail'])
+    for i in invitees:
+        ids.append(i['email'])
+    for j in ids:
+        if j == r.json()['hostEmail']:
+            membership_body = {
+                "roomId": create_room.json()['id'],
+                "personEmail": j,
+                "isModerator": True
+            }
+        else:
+            membership_body = {
+                "roomId": create_room.json()['id'],
+                "personEmail": j,
+                "isModerator": True
+            }
+        create_membership = requests.post('https://webexapis.com/v1/memberships', headers=headers, json=membership_body) #add meeting attendees to newly created room
+    for i in meetingAgenda:
+        iso_agenda_item = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=i['minutes']) - timedelta(hours=7) #for each meeting agenda item entered, generate exact time in ISO format and offset by minutes entered
+        print(iso_agenda_item)
+        iso_agenda_item_hour = str(iso_agenda_item.hour)
+        iso_agenda_item_min = str(iso_agenda_item.minute)
+        if int(iso_agenda_item.hour) < 10:
+            iso_agenda_item_hour = '0' + iso_agenda_item_hour
+        if int(iso_agenda_item_min) < 10:
+            iso_agenda_item_min = '0' + iso_agenda_item_min
+        agenda_item_time = iso_agenda_item_hour + ':' + iso_agenda_item_min
+        message_body = {"roomId": create_room.json()['id'], "text": i['message']}
+        schedule.every().day.at(agenda_item_time).do(send_alert, message_body=message_body, headers=headers) #use scheduling job to enqueue and generate message at specified time
+    t = Thread(target=run_schedule) #keep a single thread running to keep track of the scheduled jobs
+    t.start()
+    return response_with(resp.SUCCESS_200)
 
 def run_schedule(): #keep thread running during Flask session
     while True:
@@ -138,4 +136,20 @@ def run_schedule(): #keep thread running during Flask session
 def send_alert(message_body, headers):
     create_message = requests.post('https://webexapis.com/v1/messages', headers=headers, json=message_body, verify=True) #send message
     return schedule.CancelJob #ensure the scheduled job occurs only once, not everyday at same time
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
