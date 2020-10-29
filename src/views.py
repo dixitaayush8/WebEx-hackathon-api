@@ -117,7 +117,7 @@ def add_meeting(): #add meeting, create Webex Teams room with meeting host + att
         agenda_plan = ""
         s = sched.scheduler(time.time, time.sleep)
         for i in meetingAgenda:
-            agenda_plan = agenda_plan + i['message'] + '\n'
+            agenda_plan = agenda_plan + 'After ' + i['minutes'] + ', ' + i['message'] + '\n'
             iso_agenda_item = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=i['minutes']) - timedelta(hours=7) #for each meeting agenda item entered, generate exact time in ISO format and offset by minutes entered
             message_body = {"toPersonEmail": r.json()['hostEmail'], "text": i['message']}
             s.enterabs(iso_agenda_item.timestamp(), 1, send_alert, argument=(message_body,)) #schedule notification messages from bot
