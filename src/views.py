@@ -82,6 +82,15 @@ def add_meeting(): #add meeting, create Webex Teams room with meeting host + att
         enabledAutoRecordMeeting = request.json['enabledAutoRecordMeeting']
         allowAnyUserToBeCoHost = request.json['allowAnyUserToBeCoHost']
         invitees = request.json['invitees']
+        get_headers = {
+            "Authorization": "Bearer YWFlZmVhZTItY2U4ZS00NjNiLWFhMzItMmJmNWViN2ZjYTVjZDRlZGEzZDctY2Ix_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f",
+            "Accept": "*/*"
+        }
+        for i in invitees:
+            email = i['email'].replace('@', '%40')
+            email_endpoint = requests.get('https://webexapis.com/v1/people?email=' + email, headers=get_headers)  # get info for meetings that happened during the past 28 days from today
+            for j in email_endpoint.json()['items']:
+                i['name'] = j['displayName']
         meetingAgenda = request.json['meetingAgenda']
         body = {
             "title": str(title),
@@ -117,7 +126,7 @@ def add_meeting(): #add meeting, create Webex Teams room with meeting host + att
         agenda_plan = ""
         s = sched.scheduler(time.time, time.sleep)
         for i in meetingAgenda:
-            agenda_plan = agenda_plan + 'After ' + i['minutes'] + ', ' + i['message'] + '\n'
+            agenda_plan = agenda_plan + 'After ' + str(i['minutes']) + 'minute, ' + i['message'] + '\n'
             iso_agenda_item = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=i['minutes']) - timedelta(hours=7) #for each meeting agenda item entered, generate exact time in ISO format and offset by minutes entered
             message_body = {"toPersonEmail": r.json()['hostEmail'], "text": i['message']}
             s.enterabs(iso_agenda_item.timestamp(), 1, send_alert, argument=(message_body,)) #schedule notification messages from bot
@@ -126,8 +135,9 @@ def add_meeting(): #add meeting, create Webex Teams room with meeting host + att
         t = Thread(target=run_schedule, args=(s,)) #keep a single thread running to keep track of the scheduled jobs
         t.start()
         return response_with(resp.SUCCESS_200)
-    except Exception:
+    except:
         return response_with(resp.INVALID_INPUT_422)
+
 
 def run_schedule(s): #keep thread running during Flask session
     while True:
@@ -136,8 +146,10 @@ def run_schedule(s): #keep thread running during Flask session
 
 def send_alert(message_body):
     headers = {
-        "Authorization": "Bearer token for BOT",
+        "Authorization": "Bearer BOT token",
         "Content-Type": "application/json",
         "Accept": "*/*"
     }
-    create_message = requests.post('https://webexapis.com/v1/messages', headers=headers, json=message_body, verify=True) #send message 
+    create_message = requests.post('https://webexapis.com/v1/messages', headers=headers, json=message_body, verify=True) #send message
+
+
