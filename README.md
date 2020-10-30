@@ -19,5 +19,3 @@ API endpoints to demo the features we want to integrate for the hackathon
 10. Open `src/views.py` and paste your USER bearer token wherever you see "token for USER" (there are 3 instances). Paste your BOT bearer token wherever you see "BOT token" (one instance in the "send_alerts()" function). These are all in the headers of different endpoints. It should look like `Bearer <your token>`.
 11. Navigate your terminal to the "src" folder. Do a `flask run`.
 12. Your API is now set up and running. Go to the frontend code and set up your UI in another terminal. You will need both of these running at the same time. https://github.com/NavinaMathew/WebexUI.
-
-NOTE: This API was built for demo purposes. Due to a single scheduling thread running per Flask session, do not run multiple requests on the POST endpoint without doing "CTRL + C" and running flask server again with "flask run", otherwise you will get duplicate messages.
