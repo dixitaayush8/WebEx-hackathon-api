@@ -26,7 +26,7 @@ def recommendations(): #get top 7 (or less) names user had meetings with during 
         test_date_str = datetime.strptime(test_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {
-            "Authorization": "Bearer token for USER",
+            "Authorization": "Bearer token for user",
             "Accept": "*/*"
         }
         params = {
@@ -83,7 +83,7 @@ def add_meeting(): #add meeting, create Webex Teams room with meeting host + att
         allowAnyUserToBeCoHost = request.json['allowAnyUserToBeCoHost']
         invitees = request.json['invitees']
         get_headers = {
-            "Authorization": "Bearer YWFlZmVhZTItY2U4ZS00NjNiLWFhMzItMmJmNWViN2ZjYTVjZDRlZGEzZDctY2Ix_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f",
+            "Authorization": "Bearer token for USER",
             "Accept": "*/*"
         }
         for i in invitees:
@@ -126,7 +126,7 @@ def add_meeting(): #add meeting, create Webex Teams room with meeting host + att
         agenda_plan = ""
         s = sched.scheduler(time.time, time.sleep)
         for i in meetingAgenda:
-            agenda_plan = agenda_plan + 'After ' + str(i['minutes']) + ' min, ' + i['message'] + '\n'
+            agenda_plan = agenda_plan + 'After ' + str(i['minutes']) + ' min(s), ' + i['message'] + '\n'
             iso_agenda_item = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=i['minutes']) - timedelta(hours=7) #for each meeting agenda item entered, generate exact time in ISO format and offset by minutes entered
             message_body = {"toPersonEmail": r.json()['hostEmail'], "text": i['message']}
             s.enterabs(iso_agenda_item.timestamp(), 1, send_alert, argument=(message_body,)) #schedule notification messages from bot
@@ -146,10 +146,24 @@ def run_schedule(s): #keep thread running during Flask session
 
 def send_alert(message_body):
     headers = {
-        "Authorization": "Bearer BOT token",
+        "Authorization": "Bearer token for BOT",
         "Content-Type": "application/json",
         "Accept": "*/*"
     }
     create_message = requests.post('https://webexapis.com/v1/messages', headers=headers, json=message_body, verify=True) #send message
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
