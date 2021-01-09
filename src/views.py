@@ -20,9 +20,7 @@ main = Blueprint('main', __name__)
 CORS(main)
 
 @main.route('/namerecommendations', methods=['GET'])
-def recommendations(): #get top 
-    
-    (or less) names user had meetings with during the past 28 days
+def recommendations(): #get top (or less) names user had meetings with during the past 28 days
     try:
         test_date = str(datetime.today().replace(second=0, microsecond=0))
         test_date_str = datetime.strptime(test_date, '%Y-%m-%d %H:%M:%S')
