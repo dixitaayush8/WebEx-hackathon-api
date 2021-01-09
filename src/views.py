@@ -20,7 +20,9 @@ main = Blueprint('main', __name__)
 CORS(main)
 
 @main.route('/namerecommendations', methods=['GET'])
-def recommendations(): #get top 7 (or less) names user had meetings with during the past 28 days
+def recommendations(): #get top 
+    
+    (or less) names user had meetings with during the past 28 days
     try:
         test_date = str(datetime.today().replace(second=0, microsecond=0))
         test_date_str = datetime.strptime(test_date, '%Y-%m-%d %H:%M:%S')
@@ -127,7 +129,7 @@ def add_meeting(): #add meeting, create Webex Teams room with meeting host + att
         s = sched.scheduler(time.time, time.sleep)
         for i in meetingAgenda:
             agenda_plan = agenda_plan + 'After ' + str(i['minutes']) + ' min(s), ' + i['message'] + '\n'
-            iso_agenda_item = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=i['minutes']) - timedelta(hours=7) #for each meeting agenda item entered, generate exact time in ISO format and offset by minutes entered
+            iso_agenda_item = datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=i['minutes']) - timedelta(hours=8) #for each meeting agenda item entered, generate exact time in ISO format and offset by minutes entered
             message_body = {"toPersonEmail": r.json()['hostEmail'], "text": i['message']}
             s.enterabs(iso_agenda_item.timestamp(), 1, send_alert, argument=(message_body,)) #schedule notification messages from bot
         send_agenda_to_all_users_body = {"roomId": create_room.json()['id'], "text": agenda_plan}
